@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 
-from app.schemas.task import TaskCreate
+from app.schemas.task import TaskCreate, TaskResponse
 from app.services.db import init_db
 from app.services.joke_service import get_programming_joke
 from app.services.task_service import (
@@ -24,22 +24,22 @@ def root():
     return {"message": "Todo List API is running"}
 
 
-@app.get("/tasks")
+@app.get("/tasks", response_model=list[TaskResponse])
 def read_tasks():
     return get_all_tasks()
 
 
-@app.get("/tasks/unfinished")
+@app.get("/tasks/unfinished", response_model=list[TaskResponse])
 def read_unfinished_tasks():
     return get_unfinished_tasks()
 
 
-@app.post("/tasks")
+@app.post("/tasks", response_model=TaskResponse)
 def add_task(task: TaskCreate):
     return create_task(task.title)
 
 
-@app.patch("/tasks/{task_id}/status")
+@app.patch("/tasks/{task_id}/status", response_model=TaskResponse)
 def update_task_status(task_id: int):
     task = toggle_task_status(task_id)
     if task is None:

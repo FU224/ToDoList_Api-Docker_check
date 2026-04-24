@@ -1,61 +1,51 @@
-from app.services.db import get_connection
+from sqlalchemy import select
+
+from app.models.task import Task
+from app.schemas.task import TaskResponse
+from app.services.db import get_session
 
 
 def get_all_tasks():
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT id, title, is_done FROM tasks ORDER BY id")
-            return cur.fetchall()
+    with get_session() as session:
+        tasks = session.scalars(select(Task).order_by(Task.id)).all()
+        return [TaskResponse.model_validate(task) for task in tasks]
 
 
 def get_unfinished_tasks():
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT id, title, is_done FROM tasks WHERE is_done = FALSE ORDER BY id"
-            )
-            return cur.fetchall()
+    with get_session() as session:
+        tasks = session.scalars(
+            select(Task).where(Task.is_done.is_(False)).order_by(Task.id)
+        ).all()
+        return [TaskResponse.model_validate(task) for task in tasks]
 
 
 def create_task(title):
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO tasks (title) VALUES (%s) RETURNING id, title, is_done",
-                (title,),
-            )
-            task = cur.fetchone()
-        conn.commit()
-    return task
+    with get_session() as session:
+        task = Task(title=title)
+        session.add(task)
+        session.commit()
+        session.refresh(task)
+        return TaskResponse.model_validate(task)
 
 
 def toggle_task_status(task_id):
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT id, title, is_done FROM tasks WHERE id = %s", (task_id,))
-            task = cur.fetchone()
-            if not task:
-                return None
+    with get_session() as session:
+        task = session.get(Task, task_id)
+        if not task:
+            return None
 
-            new_status = not task["is_done"]
-            cur.execute(
-                """
-                UPDATE tasks
-                SET is_done = %s
-                WHERE id = %s
-                RETURNING id, title, is_done
-                """,
-                (new_status, task_id),
-            )
-            updated_task = cur.fetchone()
-        conn.commit()
-    return updated_task
+        task.is_done = not task.is_done
+        session.commit()
+        session.refresh(task)
+        return TaskResponse.model_validate(task)
 
 
 def delete_task_by_id(task_id):
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM tasks WHERE id = %s", (task_id,))
-            deleted = cur.rowcount > 0
-        conn.commit()
-    return deleted
+    with get_session() as session:
+        task = session.get(Task, task_id)
+        if not task:
+            return False
+
+        session.delete(task)
+        session.commit()
+        return True
