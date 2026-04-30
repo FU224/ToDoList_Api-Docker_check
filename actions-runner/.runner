@@ -1,0 +1,11 @@
+﻿{
+  "agentId": 2,
+  "agentName": "github secret",
+  "poolId": 1,
+  "poolName": "Default",
+  "serverUrl": "https://pipelinesghubeus11.actions.githubusercontent.com/cpzyVDnhRHPKO91hlN0x8XIhu5araH8urWOd9K5jFwG7gytnh2/",
+  "gitHubUrl": "https://github.com/FU224/ToDoList_Api-Docker_check",
+  "workFolder": "_work",
+  "useV2Flow": true,
+  "serverUrlV2": "https://broker.actions.githubusercontent.com/"
+}
